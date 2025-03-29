@@ -7,9 +7,9 @@ class WeatherAlertWidget extends StatelessWidget {
   final WeatherAlert alert;
 
   const WeatherAlertWidget({
-    Key? key,
+    super.key,
     required this.alert,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

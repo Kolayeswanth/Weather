@@ -4,10 +4,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:weather/models/weather_models.dart';
+import 'dart:math' as math;
 
 class WeatherServices {
   static const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
-  static const FORECAST_URL = 'https://api.openweathermap.org/data/2.5/onecall';
+  // For free tier API keys, use the forecast endpoint instead of onecall
+  static const FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast';
   final String apiKey;
 
   WeatherServices(this.apiKey);
@@ -20,7 +22,11 @@ class WeatherServices {
       
       final response = await http.get(Uri.parse(testUrl));
       print('Test response status: ${response.statusCode}');
-      print('Test response body: ${response.body.substring(0, 100)}...');
+      
+      if (response.statusCode == 401) {
+        print('Invalid API key. Please check your OpenWeatherMap API key.');
+        return false;
+      }
       
       return response.statusCode == 200;
     } catch (e) {
@@ -28,7 +34,6 @@ class WeatherServices {
       return false;
     }
   }
-
   Future<Weather> getWeather(String cityName) async {
     final url = '$BASE_URL?q=$cityName&appid=$apiKey&units=metric';
     print('Requesting city weather: $url');
@@ -128,9 +133,8 @@ class WeatherServices {
         
         // Now try to get forecast data (if current weather was successful)
         try {
-          // The 'onecall' endpoint is for paid API plans
-          // Check if your plan supports this
-          final forecastUrl = '$FORECAST_URL?lat=${position.latitude}&lon=${position.longitude}&exclude=minutely&appid=$apiKey&units=metric';
+          // Using the forecast endpoint instead of onecall (works with free API keys)
+          final forecastUrl = '$FORECAST_URL?lat=${position.latitude}&lon=${position.longitude}&appid=$apiKey&units=metric';
           print('Requesting forecast: $forecastUrl');
           
           final forecastResponse = await http.get(Uri.parse(forecastUrl));
@@ -139,45 +143,83 @@ class WeatherServices {
           if (forecastResponse.statusCode == 200) {
             final forecastJson = jsonDecode(forecastResponse.body);
             
-            // Add the hourly forecast data (next 24 hours)
+            // Process the 5-day/3-hour forecast data to get hourly and daily forecasts
             final List<HourlyForecast> hourlyList = [];
-            if (forecastJson.containsKey('hourly')) {
-              for (var i = 0; i < 24 && i < forecastJson['hourly'].length; i++) {
-                hourlyList.add(HourlyForecast.fromJson(forecastJson['hourly'][i]));
+            
+            // Get next 24 hours (8 entries if 3-hour intervals)
+            if (forecastJson.containsKey('list')) {
+              final forecastList = forecastJson['list'] as List;
+              
+              // Process hourly forecast (next 24 hours)
+              for (var i = 0; i < 8 && i < forecastList.length; i++) {
+                final item = forecastList[i];
+                hourlyList.add(HourlyForecast(
+                  timestamp: item['dt'],
+                  temperature: (item['main']['temp'] ?? 0.0).toDouble(),
+                  condition: item['weather'][0]['main'] ?? 'Unknown',
+                  icon: item['weather'][0]['icon'] ?? '01d',
+                  precipitation: item['pop'] != null 
+                    ? (item['pop'] * 100).toDouble() 
+                    : 0.0,
+                ));
               }
-            }
-            
-            // Add the daily forecast data (7 days)
-            final List<DailyForecast> dailyList = [];
-            if (forecastJson.containsKey('daily')) {
-              for (var i = 0; i < 7 && i < forecastJson['daily'].length; i++) {
-                dailyList.add(DailyForecast.fromJson(forecastJson['daily'][i]));
+              
+              // Process daily forecast by grouping data by day
+              final Map<String, DailyForecast> dailyMap = {};
+              
+              for (var item in forecastList) {
+                final dt = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+                final date = DateTime(dt.year, dt.month, dt.day);
+                final dateKey = date.toString().split(' ')[0];
+                
+                // Temperature and weather condition
+                final temp = item['main']['temp'].toDouble();
+                final condition = item['weather'][0]['main'];
+                final precip = item['pop'] != null ? item['pop'].toDouble() : 0.0;
+                final icon = item['weather'][0]['icon'] ?? '01d';
+                
+                if (!dailyMap.containsKey(dateKey)) {
+                  dailyMap[dateKey] = DailyForecast(
+                    timestamp: date.millisecondsSinceEpoch ~/ 1000,
+                    tempMin: temp,
+                    tempMax: temp,
+                    condition: condition,
+                    icon: icon,
+                    precipitation: precip,
+                  );
+                } else {
+                  final current = dailyMap[dateKey]!;
+                  dailyMap[dateKey] = DailyForecast(
+                    timestamp: current.timestamp,
+                    tempMax: math.max(current.tempMax, temp),
+                    tempMin: math.min(current.tempMin, temp),
+                    condition: condition, // Could implement logic to choose most severe condition
+                    icon: icon,
+                    precipitation: math.max(current.precipitation, precip),
+                  );
+                }
               }
+              
+              // Create the complete weather object with forecast data
+              final completeWeather = Weather(
+                cityName: currentWeather.cityName,
+                temperature: currentWeather.temperature,
+                mainCondition: currentWeather.mainCondition,
+                hourlyForecast: hourlyList,
+                dailyForecast: dailyMap.values.toList(),
+                alerts: [], // The free API doesn't provide alerts
+              );
+              
+              // Save to local storage for offline mode
+              final jsonData = jsonEncode(completeWeather.toJson());
+              await prefs.setString('last_weather_data', jsonData);
+              
+              return completeWeather;
+            } else {
+              // If forecast data doesn't have expected format, return basic weather
+              print('Forecast data format unexpected');
+              return currentWeather;
             }
-            
-            // Add weather alerts if available
-            final List<WeatherAlert> alertsList = [];
-            if (forecastJson.containsKey('alerts')) {
-              for (var alertJson in forecastJson['alerts']) {
-                alertsList.add(WeatherAlert.fromJson(alertJson));
-              }
-            }
-            
-            // Create complete weather object with forecast data
-            final completeWeather = Weather(
-              cityName: currentWeather.cityName,
-              temperature: currentWeather.temperature,
-              mainCondition: currentWeather.mainCondition,
-              hourlyForecast: hourlyList,
-              dailyForecast: dailyList,
-              alerts: alertsList,
-            );
-            
-            // Save to local storage for offline mode
-            final jsonData = jsonEncode(completeWeather.toJson());
-            await prefs.setString('last_weather_data', jsonData);
-            
-            return completeWeather;
           } else {
             print('Forecast error response: ${forecastResponse.body}');
             // If forecast fails but current weather succeeded, return basic weather

@@ -9,10 +9,10 @@ class HourlyForecastWidget extends StatelessWidget {
   final String Function(String) getWeatherAnimation;
 
   const HourlyForecastWidget({
-    Key? key,
+    super.key,
     required this.hourlyForecast,
     required this.getWeatherAnimation,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

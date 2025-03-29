@@ -154,6 +154,8 @@ class WeatherAlert {
   final String description;
   final int start;
   final int end;
+  
+  String get title => event;  // Use 'event' as the title
 
   WeatherAlert({
     required this.event,

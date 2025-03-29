@@ -9,10 +9,10 @@ class WeeklyForecastWidget extends StatelessWidget {
   final String Function(String) getWeatherAnimation;
 
   const WeeklyForecastWidget({
-    Key? key,
+    super.key,
     required this.dailyForecast,
     required this.getWeatherAnimation,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

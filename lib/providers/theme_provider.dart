@@ -49,7 +49,6 @@ class ThemeProvider extends ChangeNotifier {
       primary: Colors.blue,
       secondary: Colors.amber,
       surface: Colors.white,
-      background: Colors.grey[100]!,
     ),
     textTheme: const TextTheme(
       displayLarge: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
@@ -75,7 +74,6 @@ class ThemeProvider extends ChangeNotifier {
       primary: Colors.indigo,
       secondary: Colors.deepOrangeAccent,
       surface: Color(0xFF121212),
-      background: Colors.black,
     ),
     textTheme: const TextTheme(
       displayLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
