@@ -1,35 +1,53 @@
 name: weather
-description: "A new Flutter project."
+description: "A Flutter weather application"
 
-publish_to: 'none' 
-
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.4.4 <4.0.0'
+  sdk: '>=3.2.6 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  url_launcher: ^6.0.20
-
-  cupertino_icons: ^1.0.6
-  http: ^1.2.2
-  geolocator: ^13.0.1
+  cupertino_icons: ^1.0.2
+  http: ^1.3.0
+  geolocator: ^13.0.3
   geocoding: ^3.0.0
-  lottie: ^1.2.1
+  lottie: ^3.3.1
+  intl: ^0.20.2
+  provider: ^6.1.1
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.3.0
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  flutter_lints: ^3.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
-
- 
   uses-material-design: true
-  assets:
-    - assets/
-    
   
+  assets:
+    # Animation assets
+    - assets/sunny.json
+    - assets/cloudy.json
+    - assets/rainy.json
+    - assets/thunder.json
+    - assets/snow.json
+    - assets/mist.json
+    
+    # Background images
+    - assets/backgrounds/sunny_bg.jpg
+    - assets/backgrounds/cloudy_bg.jpg
+    - assets/backgrounds/rainy_bg.jpg
+    - assets/backgrounds/thunder_bg.jpg
+    - assets/backgrounds/snow_bg.jpg
+    - assets/backgrounds/mist_bg.jpg
+    - assets/backgrounds/default_bg.jpg
+    
+    # Logo assets
+    - assets/github_logo.png
+    - assets/linkedin_logo.png
