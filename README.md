@@ -1,15 +1,17 @@
-#Flutter Weather App
+****Flutter Weather App
+****
 A simple and elegant weather application built with Flutter that shows real-time weather data based on your current location. The app fetches data from the OpenWeatherMap API and displays it with beautiful animations.
 
-Features
-
+**Features
+**
 Real-time weather data based on your current location
 Beautiful Lottie animations that change based on weather conditions
 Displays current temperature and weather conditions
 Clean and minimalist UI
 Responsive design that works across different devices
 
-Getting Started
+**Getting Started
+**
 Prerequisites
 
 Flutter SDK (version 2.0.0 or higher)
@@ -17,8 +19,8 @@ Dart SDK (version 2.12.0 or higher)
 Android Studio / VS Code
 An OpenWeatherMap API key
 
-Installation
-
+**Installation
+**
 Clone this repository
 
 bashCopygit clone https://github.com/yourname/weather-app.git
@@ -46,7 +48,8 @@ geocoding - For converting coordinates to address
 lottie - For loading and displaying animations
 url_launcher - For launching URLs
 
-Project Structure
+**Project Structure
+**
 Copylib/
 ├── main.dart               # Entry point of the application
 ├── models/
