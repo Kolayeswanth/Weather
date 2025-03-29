@@ -110,9 +110,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [OpenWeatherMap](https://openweathermap.org/) for providing the weather data API
 - [Lottie](https://airbnb.design/lottie/) for the beautiful animations
 - [Flutter](https://flutter.dev/) for the amazing framework
-
-## Contact
-
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - your.email@example.com
-
-Project Link: [https://github.com/yourname/weather-app](https://github.com/yourname/weather-app)
