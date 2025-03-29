@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../services/weather_services.dart';
 import '../models/weather_models.dart';
 import '../providers/theme_provider.dart';
+import '../services/voice_assistant.dart';
+
 
 class WeatherPage extends StatefulWidget {
   const WeatherPage({super.key});
@@ -20,13 +22,209 @@ class _WeatherPageState extends State<WeatherPage> {
   String _errorMessage = '';
   bool _isLoading = true;
   bool _isApiKeyValid = false;
+  final VoiceAssistant _voiceAssistant = VoiceAssistant();
+  bool _isVoiceListening = false;
 
   @override
   void initState() {
     super.initState();
     _checkApiKey();
+   _initializeVoiceAssistant(); // Add this
   }
+// Add this method to your _WeatherPageState class
+Future<void> _testVoiceAssistant() async {
+  try {
+    // Show a dialog to indicate testing has started
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Voice Assistant Test'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Testing in progress...\nCheck console for details.'),
+            SizedBox(height: 16),
+            LinearProgressIndicator(),
+          ],
+        ),
+      ),
+    );
+    
+    print('====== TESTING VOICE ASSISTANT ======');
+    
+    // Test initialization
+    print('Step 1: Initializing voice assistant...');
+    await _voiceAssistant.initialize();
+    print('✅ Voice assistant initialized');
+    
+    // Test speech synthesis
+    print('Step 2: Testing speech synthesis...');
+    await _voiceAssistant.speak('Voice assistant test in progress');
+    print('✅ Speech synthesis test complete');
+    
+    // Test command processing
+    print('Step 3: Testing command processing...');
+    final testCommands = [
+      'What is the weather like today?',
+      'Show me tomorrow\'s forecast',
+      'What\'s the weather this week',
+      'Switch to dark theme'
+    ];
+    
+    for (final cmd in testCommands) {
+      final action = _voiceAssistant.processVoiceCommand(cmd);
+      print('Command: "$cmd" → Action: "$action"');
+    }
+    print('✅ Command processing test complete');
+    
+    // Close the dialog
+    Navigator.of(context).pop();
+    
+    // Show test results dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Test Results'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('✅ Initialization: Success'),
+            Text('✅ Speech Synthesis: Success'),
+            Text('✅ Command Processing: Success'),
+            SizedBox(height: 16),
+            Text('Would you like to test voice recognition?'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('SKIP'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _testVoiceRecognition();
+            },
+            child: Text('TEST RECOGNITION'),
+          ),
+        ],
+      ),
+    );
+  } catch (e) {
+    // Close the progress dialog if open
+    Navigator.of(context).pop();
+    
+    // Show error dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Test Failed'),
+        content: Text('Voice assistant test failed:\n$e'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+    print('❌ Voice assistant test failed: $e');
+  }
+}
 
+// Add this helper method for voice recognition testing
+Future<void> _testVoiceRecognition() async {
+  try {
+    // Show dialog to indicate testing
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text('Recognition Test'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Listening... Say something like:'),
+            SizedBox(height: 8),
+            Text('"What\'s the weather today?"', style: TextStyle(fontStyle: FontStyle.italic)),
+            Text('"Show me tomorrow\'s forecast"', style: TextStyle(fontStyle: FontStyle.italic)),
+            SizedBox(height: 16),
+            Icon(Icons.mic, color: Colors.red, size: 40),
+          ],
+        ),
+      ),
+    );
+    
+    print('Step 4: Starting speech recognition test...');
+    print('Say something after the beep...');
+    
+    await _voiceAssistant.startListening((result) {
+      print('Speech recognized: "$result"');
+      final action = _voiceAssistant.processVoiceCommand(result);
+      print('Processed action: "$action"');
+      
+      // Close the listening dialog
+      Navigator.of(context).pop();
+      
+      // Show results dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Recognition Results'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('I heard:'),
+              SizedBox(height: 8),
+              Text('"$result"', style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 16),
+              Text('Detected action: $action'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _voiceAssistant.speak('I heard: $result');
+              },
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+      
+      print('✅ Voice recognition test complete');
+    });
+  } catch (e) {
+    // Close the dialog if open
+    Navigator.of(context).pop();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Recognition Failed'),
+        content: Text('Voice recognition test failed:\n$e'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+    
+    print('❌ Voice recognition test failed: $e');
+  }
+}
   // Test API key before attempting to fetch weather
   Future<void> _checkApiKey() async {
     try {
@@ -56,6 +254,89 @@ class _WeatherPageState extends State<WeatherPage> {
       print('API key validation error: $e');
     }
   }
+  Future<void> _initializeVoiceAssistant() async {
+    try {
+      await _voiceAssistant.initialize();
+      print('Voice assistant initialized successfully');
+    } catch (e) {
+      print('Error initializing voice assistant: $e');
+    }
+  }
+  Future<void> _toggleVoiceListener() async {
+  setState(() {
+    _isVoiceListening = !_isVoiceListening;
+  });
+  
+  if (_isVoiceListening) {
+    // Show a snackbar to indicate listening started
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Listening... Say a command'),
+        duration: Duration(seconds: 2),
+        backgroundColor: Colors.blue[700],
+      ),
+    );
+    
+    await _voiceAssistant.startListening((command) {
+      print('Voice command received: $command');
+      setState(() {
+        _isVoiceListening = false;
+      });
+      
+      // Show the recognized command
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Command: "$command"'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      // Process the command
+      final action = _voiceAssistant.processVoiceCommand(command);
+      print('Processed command action: $action');
+      
+      // Execute the appropriate action
+      _executeVoiceCommand(action, command);
+    });
+  } else {
+    await _voiceAssistant.stopListening();
+  }
+}
+
+Future<void> _executeVoiceCommand(String action, String rawCommand) async {
+  switch (action) {
+    case 'current':
+      await _voiceAssistant.speak('Getting current weather');
+      await _fetchWeather();
+      if (_weather != null) {
+        await _voiceAssistant.speak(
+          'The current temperature in ${_weather!.cityName} is ${_weather!.temperature.toStringAsFixed(1)} degrees with ${_weather!.mainCondition}.');
+      }
+      break;
+    case 'forecast':
+      await _voiceAssistant.speak('Getting tomorrow\'s forecast');
+      await _fetchWeather();
+      if (_weather != null && _weather!.dailyForecast != null && _weather!.dailyForecast!.length > 1) {
+        final tomorrow = _weather!.dailyForecast![1];
+        await _voiceAssistant.speak(
+          'Tomorrow\'s forecast for ${_weather!.cityName} is ${tomorrow.condition} with temperatures between ${tomorrow.tempMin.toStringAsFixed(0)} and ${tomorrow.tempMax.toStringAsFixed(0)} degrees.');
+      }
+      break;
+    case 'weekly':
+      await _voiceAssistant.speak('Getting the weekly forecast');
+      await _fetchWeather();
+      break;
+    case 'theme':
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      final newMode = !themeProvider.isDarkMode;
+      themeProvider.setDarkMode(newMode);
+      await _voiceAssistant.speak('Changed to ${newMode ? 'dark' : 'light'} mode');
+      break;
+    case 'unknown':
+      await _voiceAssistant.speak('I didn\'t understand that. You can ask about the weather, forecast, or change the theme.');
+      break;
+  }
+}
 
   Future<void> _fetchWeather() async {
     try {
@@ -141,6 +422,10 @@ class _WeatherPageState extends State<WeatherPage> {
       appBar: AppBar(
         title: const Text('Weather App'),
         actions: [
+          IconButton(
+            icon: Icon(_isVoiceListening ? Icons.mic : Icons.mic_none),
+            onPressed: _toggleVoiceListener,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _isApiKeyValid ? _fetchWeather : _checkApiKey,
@@ -260,38 +545,92 @@ class _WeatherPageState extends State<WeatherPage> {
     );
   }
 
-  Widget _buildWeatherView() {
-    return SingleChildScrollView(
-      physics: BouncingScrollPhysics(),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // City name and current weather
-            _buildCurrentWeather(),
-            SizedBox(height: 24),
+Widget _buildWeatherView() {
+  return SingleChildScrollView(
+    physics: BouncingScrollPhysics(),
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // Your existing code for displaying weather data
+          _buildCurrentWeather(),
+          SizedBox(height: 24),
+          
+          // Display hourly forecast if available
+          if (_weather!.hourlyForecast != null && _weather!.hourlyForecast!.isNotEmpty)
+            _buildHourlyForecast(),
+          
+          SizedBox(height: 24),
+          
+          // Display daily forecast if available
+          if (_weather!.dailyForecast != null && _weather!.dailyForecast!.isNotEmpty)
+            _buildDailyForecast(),
             
-            // Display hourly forecast if available
-            if (_weather!.hourlyForecast != null && _weather!.hourlyForecast!.isNotEmpty)
-              _buildHourlyForecast(),
+          // Weather alerts
+          if (_weather!.alerts != null && _weather!.alerts!.isNotEmpty)
+            ..._weather!.alerts!.map((alert) => _buildAlert(alert)),
             
-            SizedBox(height: 24),
-            
-            // Display daily forecast if available
-            if (_weather!.dailyForecast != null && _weather!.dailyForecast!.isNotEmpty)
-              _buildDailyForecast(),
-              
-            // Weather alerts
-            if (_weather!.alerts != null && _weather!.alerts!.isNotEmpty)
-              ..._weather!.alerts!.map((alert) => _buildAlert(alert)),
-              
-            SizedBox(height: 24),
-          ],
-        ),
+          // Add the test button at the end
+          SizedBox(height: 24),
+          
+          // Voice assistant test section
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Voice Assistant Testing',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Test if your voice assistant is working correctly:',
+                  style: TextStyle(color: Colors.white),
+                ),
+                SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Test all features button
+                    ElevatedButton.icon(
+                      icon: Icon(Icons.check_circle),
+                      label: Text('Run All Tests'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.blue[700],
+                      ),
+                      onPressed: _testVoiceAssistant,
+                    ),
+                    
+                    // Just test voice recognition
+                    ElevatedButton.icon(
+                      icon: Icon(Icons.mic),
+                      label: Text('Test Microphone'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.blue[700],
+                      ),
+                      onPressed: _testVoiceRecognition,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-    );
-  }
-  
+    ),
+  );
+}
   Widget _buildCurrentWeather() {
     return Container(
       padding: EdgeInsets.all(16),

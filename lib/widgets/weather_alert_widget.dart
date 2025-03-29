@@ -17,7 +17,7 @@ class WeatherAlertWidget extends StatelessWidget {
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.8),
+        color: Colors.red.withAlpha((0.8 * 255).toInt()),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
@@ -56,11 +56,11 @@ class WeatherAlertWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'From: ${DateFormat('MMM dd, HH:mm').format(alert.start)}',
+                'From: ${DateFormat('MMM dd, HH:mm').format(DateTime.fromMillisecondsSinceEpoch(alert.start))}',
                 style: TextStyle(fontSize: 12, color: Colors.white70),
               ),
               Text(
-                'Until: ${DateFormat('MMM dd, HH:mm').format(alert.end)}',
+                'Until: ${DateFormat('MMM dd, HH:mm').format(DateTime.fromMillisecondsSinceEpoch(alert.end))}',
                 style: TextStyle(fontSize: 12, color: Colors.white70),
               ),
             ],
