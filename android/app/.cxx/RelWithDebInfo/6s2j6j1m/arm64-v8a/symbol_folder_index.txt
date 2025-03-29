@@ -1,0 +1,1 @@
+C:\myprojects\Weather\build\app\intermediates\cxx\RelWithDebInfo\6s2j6j1m\obj\arm64-v8a
